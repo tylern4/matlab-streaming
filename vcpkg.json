@@ -1,7 +1,7 @@
 {
   "dependencies": [
+    "cppzmq",
     "fmt",
-    "zeromq",
-    "cppzmq"
+    "zeromq"
   ]
 }

@@ -32,7 +32,7 @@ int main()
         // double *ptr = (double *)malloc(sizeof(double));
         auto ptr = std::make_unique<double>();
         zmq::mutable_buffer msg_data = zmq::buffer(ptr.get(), sizeof(double));
-        socket.recv(msg_data, zmq::recv_flags::none);
+        auto out = socket.recv(msg_data, zmq::recv_flags::none);
 
         double data = *(double *)msg_data.data();
         std::cout << i++ << " Received " << data << std::endl;
