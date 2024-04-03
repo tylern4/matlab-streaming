@@ -4,6 +4,13 @@
 
 ## Building
 
+On Perlmutter first load modules
+
+```bash
+module load cpu matlab
+export CC=gcc; export CXX=g++; 
+```
+
 ```bash
 git clone --recurse-submodules https://github.com/tylern4/matlab-streaming.git
 mkdir matlab-streaming/build

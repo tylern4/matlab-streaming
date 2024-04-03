@@ -18,20 +18,23 @@ class MexFunction : public matlab::mex::Function {
  public:
   void operator()(ArgumentList outputs, ArgumentList inputs) {
     checkArguments(outputs, inputs);
-    TypedArray<double> doubleArray = std::move(inputs[0]);
+
+    TypedArray<double> doubleArray = std::move(inputs[1]);
 
     // initialize the zmq context with a single IO thread
     zmq::context_t context{1};
 
     // construct a REQ (request) socket and connect to interface
     zmq::socket_t socket{context, zmq::socket_type::req};
-    socket.connect("tcp://localhost:5555");
+
+    std::string host = "localhost";
+    int port = static_cast<int>(std::move(inputs[0])[0]);
+    fmt::print("tcp://{}:{}", host, port);
+    socket.connect(fmt::format("tcp://{}:{}", host, port));
 
     for (auto &elem : doubleArray) {
-      // std::cout << "Loop " << elem << "\n";
-      void *ptr = malloc(sizeof(double));
-      ptr = &elem;
-      zmq::mutable_buffer msg_data = zmq::buffer(ptr, sizeof(double));
+      auto msg = std::make_unique<double>(elem);
+      zmq::mutable_buffer msg_data = zmq::buffer(msg.get(), sizeof(double));
 
       socket.send(msg_data, zmq::send_flags::none);
       zmq::message_t reply{};
@@ -48,9 +51,11 @@ class MexFunction : public matlab::mex::Function {
 
     // Get array factory
     ArrayFactory factory;
-
+    // if (inputs[0].getType() != ArrayType::INT8) {
+    //   matlabPtr->feval(u"error", 0, std::vector<Array>({factory.createScalar("First arg is port numner (int)")}));
+    // }
     // Check array argument: Second input must be double array
-    if (inputs[0].getType() != ArrayType::DOUBLE || inputs[0].getType() == ArrayType::COMPLEX_DOUBLE) {
+    if (inputs[1].getType() != ArrayType::DOUBLE || inputs[1].getType() == ArrayType::COMPLEX_DOUBLE) {
       matlabPtr->feval(u"error", 0, std::vector<Array>({factory.createScalar("Input must be double array")}));
     }
     // Check number of outputs
