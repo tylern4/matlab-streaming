@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-
+#include <chrono>
 #include <fmt/core.h>
 #include <zmq.hpp>
 #include "clipp.h"
@@ -10,6 +10,7 @@ int main(int argc, char **argv) {
   int port = 5555;
   int num = 1000;
   int print_num = 10;
+  int length = 1700;
   auto cli = (clipp::option("-p", "--port") & clipp::value("port", port),
               clipp::option("-h", "--host") & clipp::value("host", host),
               clipp::option("-n", "--num") & clipp::value("num", num),
@@ -29,17 +30,27 @@ int main(int argc, char **argv) {
 
   for (auto request_num = 0; request_num < num; ++request_num) {
     // send a message
-    auto msg = std::make_unique<double>(request_num);
-    zmq::mutable_buffer msg_data = zmq::buffer(msg.get(), sizeof(double));
+    auto msg = std::make_unique<double[]>(length);
+    for (int i = 0; i < length; i++) {
+	msg[i] = 1.0;
+    }
+
+    const auto p1 = std::chrono::system_clock::now();
+    auto start = std::chrono::duration_cast<std::chrono::nanoseconds>(p1.time_since_epoch()).count();
+
+    zmq::mutable_buffer msg_data = zmq::buffer(msg.get(), sizeof(double)*length);
     socket.send(msg_data, zmq::send_flags::none);
 
     // Recive the message back
     zmq::message_t reply{};
     auto out = socket.recv(reply, zmq::recv_flags::none);
     auto data = *(double *)(reply.data());
-    if (request_num % print_num == 0) {
-      fmt::print("data = {}\n", data);
-    }
+    const auto p2 = std::chrono::system_clock::now();
+    auto end = std::chrono::duration_cast<std::chrono::nanoseconds>(p2.time_since_epoch()).count();
+
+    
+    fmt::print("roundtrip = {}\n", end-start);
+    
   }
 
   return 0;
