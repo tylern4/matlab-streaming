@@ -17,8 +17,10 @@ using matlab::mex::ArgumentList;
 class MexFunction : public matlab::mex::Function {
  public:
   void operator()(ArgumentList outputs, ArgumentList inputs) {
+    const auto p1 = std::chrono::system_clock::now();
+    auto start = std::chrono::duration_cast<std::chrono::nanoseconds>(p1.time_since_epoch()).count();
     checkArguments(outputs, inputs);
-
+    ArrayFactory factory;
     TypedArray<double> doubleArray = std::move(inputs[1]);
 
     // initialize the zmq context with a single IO thread
@@ -31,18 +33,26 @@ class MexFunction : public matlab::mex::Function {
     int port = static_cast<int>(std::move(inputs[0])[0]);
     fmt::print("tcp://{}:{}", host, port);
     socket.connect(fmt::format("tcp://{}:{}", host, port));
+    auto numelm = doubleArray.getNumberOfElements();
 
-    for (auto &elem : doubleArray) {
-      auto msg = std::make_unique<double>(elem);
-      zmq::mutable_buffer msg_data = zmq::buffer(msg.get(), sizeof(double));
+    auto msg = std::vector<double>(doubleArray.begin(), doubleArray.end());
+    zmq::mutable_buffer msg_data = zmq::buffer(msg, sizeof(double) * numelm);
+    socket.send(msg_data, zmq::send_flags::none);
 
-      socket.send(msg_data, zmq::send_flags::none);
-      zmq::message_t reply{};
-      auto out = socket.recv(reply, zmq::recv_flags::none);
-      elem = *(double *)(reply.data());
-      // std::cout << "elem " << elem << "\n";
-    }
-    outputs[0] = doubleArray;
+    zmq::message_t reply{};
+    auto out = socket.recv(reply, zmq::recv_flags::none);
+
+    std::vector<double> data(reply.size() / sizeof(double));
+    memcpy(data.data(), reply.data(), reply.size());
+
+    const auto p2 = std::chrono::system_clock::now();
+    auto end = std::chrono::duration_cast<std::chrono::nanoseconds>(p2.time_since_epoch()).count();
+    auto result = (double)(end - start);
+    // std::cout << "roundtrip = " << end - start << std::endl;
+
+    TypedArray<double> matlab_result = factory.createArray<double>({1, 2}, {(double)numelm, result});
+
+    outputs[0] = matlab_result;
   }
 
   void checkArguments(ArgumentList outputs, ArgumentList inputs) {

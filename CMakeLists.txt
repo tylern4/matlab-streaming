@@ -27,7 +27,7 @@ set(LIB_LIST "libzmq cppzmq fmt::fmt")
 
 find_package(Matlab)
 if(${Matlab_FOUND})
-    matlab_add_mex(NAME steream_data SRC src/test.cpp LINK_TO libzmq cppzmq fmt::fmt)
+    matlab_add_mex(NAME stream_data SRC src/test.cpp LINK_TO libzmq cppzmq fmt::fmt)
 endif()
 
 file(GLOB PROGRAMS ${PROJECT_SOURCE_DIR}/src/*.cxx)
