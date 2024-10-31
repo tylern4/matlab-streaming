@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <thread>
-
+#include <numeric>
 #include <fmt/core.h>
 #include <zmq.hpp>
 #include "clipp.h"
@@ -38,15 +38,17 @@ int main(int argc, char** argv) {
     // std::cout << "Received " << request.to_string() << std::endl;
 
     // double *ptr = (double *)malloc(sizeof(double));
-    auto ptr = std::make_unique<double>();
-    zmq::mutable_buffer msg_data = zmq::buffer(ptr.get(), sizeof(double));
+    auto ptr = std::make_unique<double[]>(1700);
+    zmq::mutable_buffer msg_data = zmq::buffer(ptr.get(), sizeof(double)*1700);
     auto out = socket.recv(msg_data, zmq::recv_flags::none);
 
-    double data = *(double*)msg_data.data();
-    if (i++ % 1000 == 0) std::cout << i << " Received " << data << std::endl;
-    data += 1;
+    std::vector<double> data(msg_data.size() / sizeof(double));
+    memcpy(data.data(), msg_data.data(), msg_data.size());
+    // if (i++ % 1000 == 0) std::cout << i << " Received " << data[0] << std::endl;
+    auto result = std::reduce(data.begin(), data.end());
+    // std::cout << result << std::endl;
 
-    zmq::mutable_buffer msg_ptr_out = zmq::buffer(&data, sizeof(double));
+    zmq::mutable_buffer msg_ptr_out = zmq::buffer(&result, sizeof(double));
 
     // send the reply to the client
     socket.send(msg_ptr_out, zmq::send_flags::none);
