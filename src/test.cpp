@@ -31,7 +31,7 @@ class MexFunction : public matlab::mex::Function {
 
     std::string host = "localhost";
     int port = static_cast<int>(std::move(inputs[0])[0]);
-    fmt::print("tcp://{}:{}", host, port);
+    // fmt::print("tcp://{}:{}\n", host, port);
     socket.connect(fmt::format("tcp://{}:{}", host, port));
     auto numelm = doubleArray.getNumberOfElements();
 
