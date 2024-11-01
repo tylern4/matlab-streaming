@@ -1,6 +1,6 @@
 /* MyMEXFunction
  * c = MyMEXFunction(a,b);
- * Adds offset argument a to each element of double array b and
+ * Adds offset argument a to each element of FLOAT_TYPE array b and
  * returns the modified array c.
  */
 
@@ -14,6 +14,8 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
+#define FLOAT_TYPE float
+
 class MexFunction : public matlab::mex::Function {
  public:
   void operator()(ArgumentList outputs, ArgumentList inputs) {
@@ -21,7 +23,7 @@ class MexFunction : public matlab::mex::Function {
     auto start = std::chrono::duration_cast<std::chrono::nanoseconds>(p1.time_since_epoch()).count();
     checkArguments(outputs, inputs);
     ArrayFactory factory;
-    TypedArray<double> doubleArray = std::move(inputs[1]);
+    TypedArray<FLOAT_TYPE> matlab_array = std::move(inputs[1]);
 
     // initialize the zmq context with a single IO thread
     zmq::context_t context{1};
@@ -31,26 +33,25 @@ class MexFunction : public matlab::mex::Function {
 
     std::string host = "localhost";
     int port = static_cast<int>(std::move(inputs[0])[0]);
-    // fmt::print("tcp://{}:{}\n", host, port);
     socket.connect(fmt::format("tcp://{}:{}", host, port));
-    auto numelm = doubleArray.getNumberOfElements();
+    auto numelm = matlab_array.getNumberOfElements();
 
-    auto msg = std::vector<double>(doubleArray.begin(), doubleArray.end());
-    zmq::mutable_buffer msg_data = zmq::buffer(msg, sizeof(double) * numelm);
+    auto msg = std::vector<FLOAT_TYPE>(matlab_array.begin(), matlab_array.end());
+    zmq::mutable_buffer msg_data = zmq::buffer(msg, sizeof(FLOAT_TYPE) * numelm);
     socket.send(msg_data, zmq::send_flags::none);
 
     zmq::message_t reply{};
     auto out = socket.recv(reply, zmq::recv_flags::none);
 
-    std::vector<double> data(reply.size() / sizeof(double));
+    std::vector<FLOAT_TYPE> data(reply.size() / sizeof(FLOAT_TYPE));
     memcpy(data.data(), reply.data(), reply.size());
 
     const auto p2 = std::chrono::system_clock::now();
     auto end = std::chrono::duration_cast<std::chrono::nanoseconds>(p2.time_since_epoch()).count();
-    auto result = (double)(end - start);
+    auto result = (FLOAT_TYPE)(end - start);
     // std::cout << "roundtrip = " << end - start << std::endl;
 
-    TypedArray<double> matlab_result = factory.createArray<double>({1, 2}, {(double)numelm, result});
+    TypedArray<FLOAT_TYPE> matlab_result = factory.createArray<FLOAT_TYPE>({1, 2}, {(FLOAT_TYPE)numelm, result});
 
     outputs[0] = matlab_result;
   }
@@ -58,15 +59,11 @@ class MexFunction : public matlab::mex::Function {
   void checkArguments(ArgumentList outputs, ArgumentList inputs) {
     // Get pointer to engine
     std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
-
     // Get array factory
     ArrayFactory factory;
-    // if (inputs[0].getType() != ArrayType::INT8) {
-    //   matlabPtr->feval(u"error", 0, std::vector<Array>({factory.createScalar("First arg is port numner (int)")}));
-    // }
     // Check array argument: Second input must be double array
     if (inputs[1].getType() != ArrayType::DOUBLE || inputs[1].getType() == ArrayType::COMPLEX_DOUBLE) {
-      matlabPtr->feval(u"error", 0, std::vector<Array>({factory.createScalar("Input must be double array")}));
+      matlabPtr->feval(u"error", 0, std::vector<Array>({factory.createScalar("Input must be Double array")}));
     }
     // Check number of outputs
     if (outputs.size() > 1) {

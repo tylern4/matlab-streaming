@@ -7,6 +7,8 @@
 #include <zmq.hpp>
 #include "clipp.h"
 
+#define FLOAT_TYPE float
+
 int main(int argc, char** argv) {
   int port = 5555;
   auto cli = (clipp::option("-p", "--port") & clipp::value("port", port));
@@ -32,16 +34,17 @@ int main(int argc, char** argv) {
   fmt::print("Starting server on {}\n", port);
   for (;;) {
     zmq::message_t request;
-    auto ptr = std::make_unique<double[]>(1700 * 1700);
-    zmq::mutable_buffer msg_data = zmq::buffer(ptr.get(), sizeof(double) * 1700 * 1700);
+    auto ptr = std::make_unique<FLOAT_TYPE[]>(1700 * 1700);
+    zmq::mutable_buffer msg_data = zmq::buffer(ptr.get(), sizeof(FLOAT_TYPE) * 1700 * 1700);
     auto out = socket.recv(msg_data, zmq::recv_flags::none);
 
-    std::vector<double> data(msg_data.size() / sizeof(double));
+    std::vector<FLOAT_TYPE> data(msg_data.size() / sizeof(FLOAT_TYPE));
     memcpy(data.data(), msg_data.data(), msg_data.size());
+    // std::cout << "Message size: " << msg_data.size() << " bytes" << std::endl;
 
-    auto result = std::reduce(data.begin(), data.end());
+    auto result = (FLOAT_TYPE)msg_data.size();
 
-    zmq::mutable_buffer msg_ptr_out = zmq::buffer(&result, sizeof(double));
+    zmq::mutable_buffer msg_ptr_out = zmq::buffer(&result, sizeof(FLOAT_TYPE));
 
     // send the reply to the client
     socket.send(msg_ptr_out, zmq::send_flags::none);

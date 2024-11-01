@@ -1,7 +1,7 @@
 addpath 'build'
 
 results = [];
-port = 5558;
+port = 54321;
 
 for c = 1:1000
     input = rand(1700);
