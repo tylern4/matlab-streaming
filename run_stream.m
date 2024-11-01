@@ -1,7 +1,7 @@
 addpath 'build'
 
 results = [];
-port = 54321;
+port = 5558;
 
 for c = 1:1000
     input = rand(1700);
@@ -10,3 +10,4 @@ for c = 1:1000
 end
 
 saveas(histogram(results(:,end), 100), 'histogram.png')
+writematrix(results,'results.csv')
