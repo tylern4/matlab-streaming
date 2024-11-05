@@ -6,8 +6,7 @@
 #include <thread>
 #include <zmq.hpp>
 #include "clipp.h"
-
-#define FLOAT_TYPE float
+#include "constants.hpp"
 
 int main(int argc, char** argv) {
   int port = 5555;
@@ -34,8 +33,8 @@ int main(int argc, char** argv) {
   fmt::print("Starting server on {}\n", port);
   for (;;) {
     zmq::message_t request;
-    auto ptr = std::make_unique<FLOAT_TYPE[]>(1700 * 1700);
-    zmq::mutable_buffer msg_data = zmq::buffer(ptr.get(), sizeof(FLOAT_TYPE) * 1700 * 1700);
+    auto ptr = std::make_unique<FLOAT_TYPE[]>(SIZE * SIZE);
+    zmq::mutable_buffer msg_data = zmq::buffer(ptr.get(), sizeof(FLOAT_TYPE) * SIZE * SIZE);
     auto out = socket.recv(msg_data, zmq::recv_flags::none);
 
     std::vector<FLOAT_TYPE> data(msg_data.size() / sizeof(FLOAT_TYPE));

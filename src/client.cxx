@@ -4,15 +4,14 @@
 #include <string>
 #include <zmq.hpp>
 #include "clipp.h"
-
-#define FLOAT_TYPE float
+#include "constants.hpp"
 
 int main(int argc, char **argv) {
   std::string host = "localhost";
   int port = 5555;
   int num = 1000;
   int print_num = 10;
-  int length = 1700 * 1700;
+  int length = SIZE * SIZE;
   auto cli = (clipp::option("-p", "--port") & clipp::value("port", port),
               clipp::option("-h", "--host") & clipp::value("host", host),
               clipp::option("-n", "--num") & clipp::value("num", num),
@@ -34,7 +33,7 @@ int main(int argc, char **argv) {
     // send a message
     auto msg = std::make_unique<FLOAT_TYPE[]>(length);
     for (int i = 0; i < length; i++) {
-      msg[i] = 1.0f;
+      msg[i] = 1.0;
     }
 
     const auto p1 = std::chrono::system_clock::now();
